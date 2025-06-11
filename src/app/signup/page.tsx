@@ -47,7 +47,7 @@ const SignUpPage = () => {
         return;
       }
       alert("회원가입 성공! 로그인 해주세요.");
-      // window.location.href = "/login";
+      window.location.href = "/login";
     } catch {
       alert("에러 발생");
     }
