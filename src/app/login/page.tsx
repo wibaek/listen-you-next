@@ -10,10 +10,26 @@ const LoginPage = () => {
     password: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: 로그인 로직 구현
-    console.log("로그인 시도:", formData);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: formData.id,
+          password: formData.password,
+        }),
+      });
+
+      if (!res.ok) {
+        alert("로그인 실패");
+        return;
+      }
+      window.location.href = "/"; // 필요시 라우팅
+    } catch {
+      alert("에러 발생");
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
