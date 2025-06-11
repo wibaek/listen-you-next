@@ -51,21 +51,8 @@ const ConsultPage = () => {
           ]);
           setCurrentTranscript("");
 
-          // 간단한 응답 생성
-          setTimeout(() => {
-            const responses = [
-              "그렇군요. 그때 어떤 감정이 드셨나요?",
-              "힘드셨겠네요. 그 상황에서 어떻게 대처하셨어요?",
-              "그런 경험이 있으셨군요. 지금은 어떠신가요?",
-              "많이 속상하셨겠어요. 더 자세히 말씀해 주시겠어요?",
-            ];
-            const randomResponse =
-              responses[Math.floor(Math.random() * responses.length)];
-            setMessages((prev) => [
-              ...prev,
-              { text: randomResponse, isUser: false },
-            ]);
-          }, 1000);
+          // 실제 상담 API 호출
+          fetchCounselMessage(finalTranscript);
         }
       };
 
@@ -158,6 +145,31 @@ const ConsultPage = () => {
         console.error("Polly synthesis error:", error);
         setIsSpeaking(false);
       }
+    }
+  };
+
+  // 실제 상담 API 호출 함수
+  const fetchCounselMessage = async (query: string) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/generate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            user_id: 1, // 실제 서비스에서는 로그인 정보로 대체
+            counsel_id: "aaa", // 실제 서비스에서는 세션 등으로 대체
+          }),
+        }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.message) {
+        setMessages((prev) => [...prev, { text: data.message, isUser: false }]);
+      }
+    } catch {
+      // 에러 무시 또는 에러 메시지 추가 가능
     }
   };
 
