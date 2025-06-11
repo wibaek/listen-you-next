@@ -13,6 +13,7 @@ const ConsultPage = () => {
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [counselId, setCounselId] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -74,6 +75,25 @@ const ConsultPage = () => {
     audioRef.current.onended = () => {
       setIsSpeaking(false);
     };
+  }, []);
+
+  // 상담 시작 시 counsel_id 발급
+  useEffect(() => {
+    const startCounsel = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.counsel_id) setCounselId(data.counsel_id);
+      } catch {
+        // 에러 처리
+      }
+    };
+    startCounsel();
   }, []);
 
   const handleStartRecording = () => {
@@ -150,6 +170,7 @@ const ConsultPage = () => {
 
   // 실제 상담 API 호출 함수
   const fetchCounselMessage = async (query: string) => {
+    if (!counselId) return;
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/generate`,
@@ -158,8 +179,8 @@ const ConsultPage = () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             query,
-            user_id: 1, // 실제 서비스에서는 로그인 정보로 대체
-            counsel_id: "aaa", // 실제 서비스에서는 세션 등으로 대체
+            user_id: 1,
+            counsel_id: counselId,
           }),
         }
       );
@@ -169,7 +190,7 @@ const ConsultPage = () => {
         setMessages((prev) => [...prev, { text: data.message, isUser: false }]);
       }
     } catch {
-      // 에러 무시 또는 에러 메시지 추가 가능
+      // 에러 처리
     }
   };
 
