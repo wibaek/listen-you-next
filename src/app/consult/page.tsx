@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 import { pollyClient } from "@/utils/polly";
 import { SpeechRecognition } from "@/types/speech";
-import styles from "./page.module.css";
 
 const ConsultPage = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -163,13 +162,14 @@ const ConsultPage = () => {
   };
 
   return (
-    <div className={styles.voiceAppWrapper}>
-      <header className={styles.voiceHeader}>
-        <h1>Listen You</h1>
-        <p className={styles.subtitle}>당신의 이야기를 들려주세요</p>
+    <div className="max-w-3xl mx-auto p-8 min-h-screen flex flex-col">
+      <header className="text-center mb-8">
+        <h1 className="text-4xl text-blue-600 mb-2">Listen You</h1>
+        <p className="text-xl text-gray-600">당신의 이야기를 들려주세요</p>
       </header>
+
       {!isSupported && (
-        <div className={styles.voiceWarning}>
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-8 text-center">
           <span role="img" aria-label="경고">
             ⚠️
           </span>{" "}
@@ -177,44 +177,46 @@ const ConsultPage = () => {
           <b>Chrome, Edge, Safari</b>를 사용해주세요.
         </div>
       )}
-      <main className={styles.voiceMain}>
+
+      <main className="flex-1 flex flex-col">
         {messages.length === 0 && !currentTranscript ? (
-          <div className={styles.voiceGreeting}>
+          <div className="text-center text-2xl text-gray-600 m-auto">
             안녕하세요! Listen You입니다.
             <br />
             <br />
             마이크 버튼을 눌러 이야기를 시작해보세요.
           </div>
         ) : (
-          <div className={styles.conversationArea}>
-            <div className={styles.messagesContainer}>
+          <div className="flex-1 overflow-y-auto mb-8 bg-gray-50 rounded-2xl p-6">
+            <div className="flex flex-col gap-4">
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`${styles.message} ${
+                  className={`max-w-[80%] p-4 rounded-2xl leading-relaxed ${
                     message.isUser
-                      ? styles.userMessage
-                      : styles.counselorMessage
+                      ? "self-end bg-blue-600 text-white rounded-br-sm"
+                      : "self-start bg-white text-gray-800 rounded-bl-sm shadow-sm"
                   }`}
                 >
                   {message.text}
                 </div>
               ))}
               {currentTranscript && (
-                <div
-                  className={`${styles.message} ${styles.userMessage} ${styles.interim}`}
-                >
+                <div className="max-w-[80%] p-4 rounded-2xl leading-relaxed self-end bg-blue-600 text-white rounded-br-sm opacity-70">
                   {currentTranscript}
-                  <span className={styles.typingIndicator}>|</span>
+                  <span className="inline-block ml-1 animate-[blink_1s_infinite]">
+                    |
+                  </span>
                 </div>
               )}
             </div>
           </div>
         )}
-        <div className={styles.voiceControls}>
+
+        <div className="flex justify-center gap-8 p-4">
           <button
-            className={`${styles.micBtn} ${
-              isRecording ? styles.recording : ""
+            className={`w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
+              isRecording ? "bg-red-50 animate-[pulse_2s_infinite]" : ""
             }`}
             onClick={isRecording ? handleStopRecording : handleStartRecording}
             aria-label={isRecording ? "녹음 중지" : "녹음 시작"}
@@ -242,8 +244,8 @@ const ConsultPage = () => {
             </svg>
           </button>
           <button
-            className={`${styles.speakerBtn} ${
-              isSpeaking ? styles.speaking : ""
+            className={`w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
+              isSpeaking ? "bg-blue-50 animate-[pulse_2s_infinite]" : ""
             }`}
             onClick={handleSpeak}
             aria-label={isSpeaking ? "음성 중지" : "상담 내용 듣기"}
