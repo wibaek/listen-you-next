@@ -7,9 +7,9 @@ import { useState } from "react";
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
     id: "",
+    email: "",
     password: "",
     passwordConfirm: "",
-    nickname: "",
   });
 
   const [errors, setErrors] = useState({
@@ -17,10 +17,9 @@ const SignUpPage = () => {
     passwordConfirm: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 비밀번호 확인 검증
     if (formData.password !== formData.passwordConfirm) {
       setErrors((prev) => ({
         ...prev,
@@ -29,8 +28,29 @@ const SignUpPage = () => {
       return;
     }
 
-    // TODO: 회원가입 로직 구현
-    console.log("회원가입 시도:", formData);
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/user/signup/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: formData.id,
+            email: formData.email,
+            password: formData.password,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        alert("회원가입 실패");
+        return;
+      }
+      alert("회원가입 성공! 로그인 해주세요.");
+      // window.location.href = "/login";
+    } catch {
+      alert("에러 발생");
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +60,6 @@ const SignUpPage = () => {
       [name]: value,
     }));
 
-    // 비밀번호 확인 필드 변경 시 에러 메시지 초기화
     if (name === "passwordConfirm" || name === "password") {
       setErrors((prev) => ({
         ...prev,
@@ -94,6 +113,24 @@ const SignUpPage = () => {
             </div>
             <div>
               <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                이메일
+              </label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="이메일을 입력하세요"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
+                required
+              />
+            </div>
+            <div>
+              <label
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
@@ -134,24 +171,6 @@ const SignUpPage = () => {
                   {errors.passwordConfirm}
                 </p>
               )}
-            </div>
-            <div>
-              <label
-                htmlFor="nickname"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                닉네임
-              </label>
-              <input
-                id="nickname"
-                type="text"
-                name="nickname"
-                value={formData.nickname}
-                onChange={handleChange}
-                placeholder="닉네임을 입력하세요"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
-                required
-              />
             </div>
           </div>
 
