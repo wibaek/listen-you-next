@@ -4,16 +4,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-const LoginPage = () => {
+const SignUpPage = () => {
   const [formData, setFormData] = useState({
     id: "",
     password: "",
+    passwordConfirm: "",
+    nickname: "",
+  });
+
+  const [errors, setErrors] = useState({
+    password: "",
+    passwordConfirm: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: 로그인 로직 구현
-    console.log("로그인 시도:", formData);
+
+    // 비밀번호 확인 검증
+    if (formData.password !== formData.passwordConfirm) {
+      setErrors((prev) => ({
+        ...prev,
+        passwordConfirm: "비밀번호가 일치하지 않습니다.",
+      }));
+      return;
+    }
+
+    // TODO: 회원가입 로직 구현
+    console.log("회원가입 시도:", formData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,6 +39,14 @@ const LoginPage = () => {
       ...prev,
       [name]: value,
     }));
+
+    // 비밀번호 확인 필드 변경 시 에러 메시지 초기화
+    if (name === "passwordConfirm" || name === "password") {
+      setErrors((prev) => ({
+        ...prev,
+        passwordConfirm: "",
+      }));
+    }
   };
 
   return (
@@ -39,14 +64,14 @@ const LoginPage = () => {
             />
           </div>
           <div className="text-center">
-            <h2 className="text-2xl font-semibold text-gray-900">환영합니다</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">회원가입</h2>
             <p className="mt-2 text-sm text-gray-600">
-              Listen You에 로그인하세요
+              Listen You의 회원이 되어보세요
             </p>
           </div>
         </div>
 
-        {/* 로그인 폼 */}
+        {/* 회원가입 폼 */}
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div className="space-y-4">
             <div>
@@ -85,25 +110,68 @@ const LoginPage = () => {
                 required
               />
             </div>
+            <div>
+              <label
+                htmlFor="passwordConfirm"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                비밀번호 확인
+              </label>
+              <input
+                id="passwordConfirm"
+                type="password"
+                name="passwordConfirm"
+                value={formData.passwordConfirm}
+                onChange={handleChange}
+                placeholder="비밀번호를 다시 입력하세요"
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all ${
+                  errors.passwordConfirm ? "border-red-500" : "border-gray-300"
+                }`}
+                required
+              />
+              {errors.passwordConfirm && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.passwordConfirm}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="nickname"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                닉네임
+              </label>
+              <input
+                id="nickname"
+                type="text"
+                name="nickname"
+                value={formData.nickname}
+                onChange={handleChange}
+                placeholder="닉네임을 입력하세요"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
+                required
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             className="w-full py-3 px-4 border border-transparent rounded-lg text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all text-sm font-semibold shadow-sm"
           >
-            로그인
+            회원가입
           </button>
         </form>
 
-        {/* 회원가입 링크 */}
+        {/* 로그인 링크 */}
         <div className="text-center pt-4">
           <p className="text-sm text-gray-600">
-            아직 계정이 없으신가요?{" "}
+            이미 계정이 있으신가요?{" "}
             <Link
-              href="/signup"
-              className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+              href="/login"
+              className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
             >
-              회원가입하기
+              로그인하기
             </Link>
           </p>
         </div>
@@ -112,4 +180,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default SignUpPage;
