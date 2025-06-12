@@ -82,9 +82,7 @@ const ConsultPage = () => {
     const startCounsel = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/chat`, {
-          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
         });
         if (!res.ok) return;
         const data = await res.json();
