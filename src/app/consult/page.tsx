@@ -12,10 +12,8 @@ const ConsultPage = () => {
   >([]);
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [counselId, setCounselId] = useState<string | null>(null);
   const counselIdRef = useRef<string | null>(null);
-
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -74,7 +72,6 @@ const ConsultPage = () => {
       };
       recognitionRef.current = recognition;
       audio = new Audio();
-      audio.onended = () => setIsSpeaking(false);
       audioRef.current = audio;
     })();
     return () => {
@@ -83,6 +80,39 @@ const ConsultPage = () => {
       audioRef.current?.pause();
     };
   }, []);
+
+  // 상담사 답변이 새로 오면 자동 Polly 호출
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.isUser) return;
+    (async () => {
+      try {
+        const command = new SynthesizeSpeechCommand({
+          Engine: "neural",
+          LanguageCode: "ko-KR",
+          Text: lastMsg.text,
+          OutputFormat: "mp3",
+          VoiceId: "Seoyeon",
+          TextType: "text",
+        });
+        const response = await pollyClient.send(command);
+        if (response.AudioStream) {
+          const blob = new Blob(
+            [await response.AudioStream.transformToByteArray()],
+            { type: "audio/mpeg" }
+          );
+          const url = URL.createObjectURL(blob);
+          audioRef.current!.src = url;
+          audioRef.current!.play();
+          audioRef.current!.onended = () => {
+            URL.revokeObjectURL(url);
+          };
+        }
+      } catch {}
+    })();
+  }, [messages]);
 
   const handleStartRecording = () => {
     if (recognitionRef.current && isSupported) {
@@ -98,41 +128,6 @@ const ConsultPage = () => {
     }
   };
 
-  const handleSpeak = async () => {
-    if (!audioRef.current || isSpeaking) return;
-    const counselorText = messages
-      .filter((m) => !m.isUser)
-      .map((m) => m.text)
-      .join(" ");
-    if (!counselorText) return;
-    try {
-      const command = new SynthesizeSpeechCommand({
-        Engine: "neural",
-        LanguageCode: "ko-KR",
-        Text: counselorText,
-        OutputFormat: "mp3",
-        VoiceId: "Seoyeon",
-        TextType: "text",
-      });
-      const response = await pollyClient.send(command);
-      if (response.AudioStream) {
-        const blob = new Blob(
-          [await response.AudioStream.transformToByteArray()],
-          { type: "audio/mpeg" }
-        );
-        const url = URL.createObjectURL(blob);
-        audioRef.current.src = url;
-        audioRef.current.play();
-        setIsSpeaking(true);
-        audioRef.current.onended = () => {
-          setIsSpeaking(false);
-          URL.revokeObjectURL(url);
-        };
-      }
-    } catch {}
-  };
-
-  // 실제 상담 API 호출 함수
   const fetchCounselMessage = async (query: string) => {
     if (!counselIdRef.current) return;
     try {
@@ -236,33 +231,6 @@ const ConsultPage = () => {
                 d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
                 fill={
                   isRecording ? "#dc3545" : isSupported ? "#0066ff" : "#999"
-                }
-              />
-            </svg>
-          </button>
-          <button
-            className={`w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
-              isSpeaking ? "bg-blue-50 animate-[pulse_2s_infinite]" : ""
-            }`}
-            onClick={handleSpeak}
-            aria-label={isSpeaking ? "음성 중지" : "상담 내용 듣기"}
-            disabled={messages.filter((m) => !m.isUser).length === 0}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
-                fill={
-                  isSpeaking
-                    ? "#0066ff"
-                    : messages.filter((m) => !m.isUser).length === 0
-                    ? "#999"
-                    : "#666"
                 }
               />
             </svg>
