@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 import { pollyClient } from "@/utils/polly";
 import { SpeechRecognition } from "@/types/speech";
+import { useRouter } from "next/navigation";
 
 const ConsultPage = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -16,6 +17,7 @@ const ConsultPage = () => {
   const counselIdRef = useRef<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     counselIdRef.current = counselId;
@@ -181,16 +183,16 @@ const ConsultPage = () => {
         ) : (
           <div className="flex-1 overflow-y-auto mb-8 bg-gray-50 rounded-2xl p-6">
             <div className="flex flex-col gap-4">
-              {messages.map((message, index) => (
+              {messages.map((m, i) => (
                 <div
-                  key={index}
+                  key={i}
                   className={`max-w-[80%] p-4 rounded-2xl leading-relaxed ${
-                    message.isUser
+                    m.isUser
                       ? "self-end bg-blue-600 text-white rounded-br-sm"
                       : "self-start bg-white text-gray-800 rounded-bl-sm shadow-sm"
                   }`}
                 >
-                  {message.text}
+                  {m.text}
                 </div>
               ))}
               {currentTranscript && (
@@ -205,7 +207,7 @@ const ConsultPage = () => {
           </div>
         )}
 
-        <div className="flex justify-center gap-8 p-4">
+        <div className="flex justify-center gap-4 p-4 items-center">
           <button
             className={`w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
               isRecording ? "bg-red-50 animate-[pulse_2s_infinite]" : ""
@@ -232,6 +234,31 @@ const ConsultPage = () => {
                 fill={
                   isRecording ? "#dc3545" : isSupported ? "#0066ff" : "#999"
                 }
+              />
+            </svg>
+          </button>
+          {/* X 버튼: 마이크 버튼 오른쪽 */}
+          <button
+            className="w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg ml-2"
+            aria-label="상담 종료"
+            onClick={() => {
+              if (window.confirm("정말 상담을 종료하시겠습니까?")) {
+                router.push("/");
+              }
+            }}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 6L18 18M18 6L6 18"
+                stroke="#dc3545"
+                strokeWidth="2.5"
+                strokeLinecap="round"
               />
             </svg>
           </button>
