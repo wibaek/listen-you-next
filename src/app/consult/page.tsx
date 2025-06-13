@@ -6,6 +6,8 @@ import { pollyClient } from "@/utils/polly";
 import { SpeechRecognition } from "@/types/speech";
 
 const ConsultPage = () => {
+  console.log("ConsultPage 컴포넌트 렌더링");
+
   const [isRecording, setIsRecording] = useState(false);
   const [messages, setMessages] = useState<
     Array<{ text: string; isUser: boolean }>
@@ -13,10 +15,20 @@ const ConsultPage = () => {
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [counselId, setCounselId] = useState<string | null>(null);
+
+  console.log("현재 counselId 상태:", counselId);
+
+  // counselId 상태 변경 추적
+  useEffect(() => {
+    console.log("counselId 상태 변경:", counselId);
+  }, [counselId]);
+
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    console.log("첫 번째 useEffect 실행 (브라우저 지원 확인)");
     // 브라우저 지원 확인
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -51,21 +63,8 @@ const ConsultPage = () => {
           ]);
           setCurrentTranscript("");
 
-          // 간단한 응답 생성
-          setTimeout(() => {
-            const responses = [
-              "그렇군요. 그때 어떤 감정이 드셨나요?",
-              "힘드셨겠네요. 그 상황에서 어떻게 대처하셨어요?",
-              "그런 경험이 있으셨군요. 지금은 어떠신가요?",
-              "많이 속상하셨겠어요. 더 자세히 말씀해 주시겠어요?",
-            ];
-            const randomResponse =
-              responses[Math.floor(Math.random() * responses.length)];
-            setMessages((prev) => [
-              ...prev,
-              { text: randomResponse, isUser: false },
-            ]);
-          }, 1000);
+          // 실제 상담 API 호출
+          fetchCounselMessage(finalTranscript);
         }
       };
 
@@ -87,6 +86,37 @@ const ConsultPage = () => {
     audioRef.current.onended = () => {
       setIsSpeaking(false);
     };
+  }, []);
+
+  // 상담 시작 시 counsel_id 발급
+  useEffect(() => {
+    console.log("두 번째 useEffect 실행 (상담 시작)");
+    const startCounsel = async () => {
+      try {
+        console.log("상담 시작 API 호출");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/chat`, {
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!res.ok) {
+          console.error("상담 시작 API 응답 에러:", res.status, res.statusText);
+          return;
+        }
+
+        const data = await res.json();
+        console.log("상담 시작 API 응답:", data);
+
+        if (data.counsel_id) {
+          console.log("counselId 설정:", data.counsel_id);
+          setCounselId(data.counsel_id);
+        } else {
+          console.error("counsel_id가 응답에 없습니다");
+        }
+      } catch (error) {
+        console.error("상담 시작 API 호출 중 에러:", error);
+      }
+    };
+    startCounsel();
   }, []);
 
   const handleStartRecording = () => {
@@ -161,6 +191,45 @@ const ConsultPage = () => {
     }
   };
 
+  // 실제 상담 API 호출 함수
+  const fetchCounselMessage = async (query: string) => {
+    console.log("counselId", counselId);
+    try {
+      console.log("API 요청 시작:", {
+        url: `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/generate/`,
+        query,
+        counselId,
+      });
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/generate/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            user_id: 1,
+            counsel_id: counselId,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        console.error("API 응답 에러:", res.status, res.statusText);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("API 응답:", data);
+
+      if (data.message) {
+        setMessages((prev) => [...prev, { text: data.message, isUser: false }]);
+      }
+    } catch (error) {
+      console.error("API 호출 중 에러 발생:", error);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto p-8 min-h-screen flex flex-col">
       <header className="text-center mb-8">
@@ -175,6 +244,13 @@ const ConsultPage = () => {
           </span>{" "}
           이 브라우저는 음성 인식을 지원하지 않습니다.{" "}
           <b>Chrome, Edge, Safari</b>를 사용해주세요.
+        </div>
+      )}
+
+      {/* 상담 준비 중 안내 */}
+      {isSupported && !counselId && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg mb-8 text-center">
+          상담 준비 중입니다... 잠시만 기다려주세요.
         </div>
       )}
 
@@ -220,7 +296,7 @@ const ConsultPage = () => {
             }`}
             onClick={isRecording ? handleStopRecording : handleStartRecording}
             aria-label={isRecording ? "녹음 중지" : "녹음 시작"}
-            disabled={!isSupported}
+            disabled={!isSupported || !counselId}
           >
             <svg
               width="24"
