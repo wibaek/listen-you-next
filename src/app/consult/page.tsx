@@ -5,6 +5,8 @@ import { SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 import { pollyClient } from "@/utils/polly";
 import { SpeechRecognition } from "@/types/speech";
 import { useRouter } from "next/navigation";
+import RecordButton from "./RecordButton";
+import ExitButton from "./ExitButton";
 
 const ConsultPage = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -208,60 +210,20 @@ const ConsultPage = () => {
         )}
 
         <div className="flex justify-center gap-4 p-4 items-center">
-          <button
-            className={`w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
-              isRecording ? "bg-red-50 animate-[pulse_2s_infinite]" : ""
-            }`}
-            onClick={isRecording ? handleStopRecording : handleStartRecording}
-            aria-label={isRecording ? "녹음 중지" : "녹음 시작"}
-            disabled={!isSupported || !counselId}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"
-                fill={
-                  isRecording ? "#dc3545" : isSupported ? "#0066ff" : "#999"
-                }
-              />
-              <path
-                d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
-                fill={
-                  isRecording ? "#dc3545" : isSupported ? "#0066ff" : "#999"
-                }
-              />
-            </svg>
-          </button>
-          {/* X 버튼: 마이크 버튼 오른쪽 */}
-          <button
-            className="w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg ml-2"
-            aria-label="상담 종료"
-            onClick={() => {
+          <RecordButton
+            isRecording={isRecording}
+            isSupported={isSupported}
+            counselId={counselId}
+            handleStartRecording={handleStartRecording}
+            handleStopRecording={handleStopRecording}
+          />
+          <ExitButton
+            onExit={() => {
               if (window.confirm("정말 상담을 종료하시겠습니까?")) {
                 router.push("/");
               }
             }}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 6L18 18M18 6L6 18"
-                stroke="#dc3545"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
+          />
         </div>
       </main>
     </div>
