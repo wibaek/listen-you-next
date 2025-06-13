@@ -4,120 +4,119 @@ import { useState, useEffect, useRef } from "react";
 import { SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 import { pollyClient } from "@/utils/polly";
 import { SpeechRecognition } from "@/types/speech";
+import { useRouter } from "next/navigation";
+import RecordButton from "./RecordButton";
+import ExitButton from "./ExitButton";
 
 const ConsultPage = () => {
-  console.log("ConsultPage 컴포넌트 렌더링");
-
   const [isRecording, setIsRecording] = useState(false);
   const [messages, setMessages] = useState<
     Array<{ text: string; isUser: boolean }>
   >([]);
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [counselId, setCounselId] = useState<string | null>(null);
-
-  console.log("현재 counselId 상태:", counselId);
-
-  // counselId 상태 변경 추적
-  useEffect(() => {
-    console.log("counselId 상태 변경:", counselId);
-  }, [counselId]);
-
+  const counselIdRef = useRef<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    console.log("첫 번째 useEffect 실행 (브라우저 지원 확인)");
-    // 브라우저 지원 확인
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      setIsSupported(true);
+    counselIdRef.current = counselId;
+  }, [counselId]);
 
-      // SpeechRecognition 설정
-      const recognition = new SpeechRecognition();
+  useEffect(() => {
+    let recognition: SpeechRecognition | null = null;
+    let audio: HTMLAudioElement | null = null;
+    let mounted = true;
+    (async () => {
+      // 상담 시작
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/chat`, {
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await res.json();
+        if (!mounted) return;
+        setCounselId(data.counsel_id);
+      } catch {
+        setIsSupported(false);
+        return;
+      }
+      // 음성 인식 지원 확인
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        setIsSupported(false);
+        return;
+      }
+      setIsSupported(true);
+      recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = "ko-KR";
-
       recognition.onresult = (event) => {
-        let interimTranscript = "";
-        let finalTranscript = "";
-
+        let interim = "";
+        let final = "";
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
+          const t = event.results[i][0].transcript;
+          if (event.results[i].isFinal) final += t;
+          else interim += t;
         }
-
-        setCurrentTranscript(interimTranscript);
-
-        if (finalTranscript) {
-          setMessages((prev) => [
-            ...prev,
-            { text: finalTranscript, isUser: true },
-          ]);
+        setCurrentTranscript(interim);
+        if (final) {
+          setMessages((prev) => [...prev, { text: final, isUser: true }]);
           setCurrentTranscript("");
-
-          // 실제 상담 API 호출
-          fetchCounselMessage(finalTranscript);
+          if (counselIdRef.current) fetchCounselMessage(final);
         }
       };
-
-      recognition.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
-        setIsRecording(false);
-      };
-
+      recognition.onerror = () => setIsRecording(false);
       recognition.onend = () => {
         setIsRecording(false);
         setCurrentTranscript("");
       };
-
       recognitionRef.current = recognition;
-    }
-
-    // Audio 엘리먼트 생성
-    audioRef.current = new Audio();
-    audioRef.current.onended = () => {
-      setIsSpeaking(false);
+      audio = new Audio();
+      audioRef.current = audio;
+    })();
+    return () => {
+      mounted = false;
+      recognitionRef.current?.stop();
+      audioRef.current?.pause();
     };
   }, []);
 
-  // 상담 시작 시 counsel_id 발급
+  // 상담사 답변이 새로 오면 자동 Polly 호출
   useEffect(() => {
-    console.log("두 번째 useEffect 실행 (상담 시작)");
-    const startCounsel = async () => {
+    if (!audioRef.current) return;
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.isUser) return;
+    (async () => {
       try {
-        console.log("상담 시작 API 호출");
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/chat`, {
-          headers: { "Content-Type": "application/json" },
+        const command = new SynthesizeSpeechCommand({
+          Engine: "neural",
+          LanguageCode: "ko-KR",
+          Text: lastMsg.text,
+          OutputFormat: "mp3",
+          VoiceId: "Seoyeon",
+          TextType: "text",
         });
-
-        if (!res.ok) {
-          console.error("상담 시작 API 응답 에러:", res.status, res.statusText);
-          return;
+        const response = await pollyClient.send(command);
+        if (response.AudioStream) {
+          const blob = new Blob(
+            [await response.AudioStream.transformToByteArray()],
+            { type: "audio/mpeg" }
+          );
+          const url = URL.createObjectURL(blob);
+          audioRef.current!.src = url;
+          audioRef.current!.play();
+          audioRef.current!.onended = () => {
+            URL.revokeObjectURL(url);
+          };
         }
-
-        const data = await res.json();
-        console.log("상담 시작 API 응답:", data);
-
-        if (data.counsel_id) {
-          console.log("counselId 설정:", data.counsel_id);
-          setCounselId(data.counsel_id);
-        } else {
-          console.error("counsel_id가 응답에 없습니다");
-        }
-      } catch (error) {
-        console.error("상담 시작 API 호출 중 에러:", error);
-      }
-    };
-    startCounsel();
-  }, []);
+      } catch {}
+    })();
+  }, [messages]);
 
   const handleStartRecording = () => {
     if (recognitionRef.current && isSupported) {
@@ -133,74 +132,9 @@ const ConsultPage = () => {
     }
   };
 
-  const handleSpeak = async () => {
-    if (!audioRef.current) return;
-
-    // 이미 말하고 있다면 중지
-    if (isSpeaking) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsSpeaking(false);
-      return;
-    }
-
-    // 상담사 메시지만 추출
-    const counselorMessages = messages
-      .filter((msg) => !msg.isUser)
-      .map((msg) => msg.text)
-      .join(" ");
-
-    if (counselorMessages) {
-      try {
-        const command = new SynthesizeSpeechCommand({
-          Engine: "neural",
-          LanguageCode: "ko-KR",
-          Text: counselorMessages,
-          OutputFormat: "mp3",
-          VoiceId: "Seoyeon",
-          TextType: "text",
-        });
-
-        const response = await pollyClient.send(command);
-
-        if (response.AudioStream) {
-          // AudioStream을 Blob으로 변환
-          const blob = new Blob(
-            [await response.AudioStream.transformToByteArray()],
-            {
-              type: "audio/mpeg",
-            }
-          );
-          const url = URL.createObjectURL(blob);
-
-          // Audio 엘리먼트에 설정하고 재생
-          audioRef.current.src = url;
-          audioRef.current.play();
-          setIsSpeaking(true);
-
-          // 재생이 끝나면 URL 해제
-          audioRef.current.onended = () => {
-            setIsSpeaking(false);
-            URL.revokeObjectURL(url);
-          };
-        }
-      } catch (error) {
-        console.error("Polly synthesis error:", error);
-        setIsSpeaking(false);
-      }
-    }
-  };
-
-  // 실제 상담 API 호출 함수
   const fetchCounselMessage = async (query: string) => {
-    console.log("counselId", counselId);
+    if (!counselIdRef.current) return;
     try {
-      console.log("API 요청 시작:", {
-        url: `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/generate/`,
-        query,
-        counselId,
-      });
-
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/generate/`,
         {
@@ -209,25 +143,15 @@ const ConsultPage = () => {
           body: JSON.stringify({
             query,
             user_id: 1,
-            counsel_id: counselId,
+            counsel_id: counselIdRef.current,
           }),
         }
       );
-
-      if (!res.ok) {
-        console.error("API 응답 에러:", res.status, res.statusText);
-        return;
-      }
-
       const data = await res.json();
-      console.log("API 응답:", data);
-
       if (data.message) {
         setMessages((prev) => [...prev, { text: data.message, isUser: false }]);
       }
-    } catch (error) {
-      console.error("API 호출 중 에러 발생:", error);
-    }
+    } catch {}
   };
 
   return (
@@ -239,15 +163,11 @@ const ConsultPage = () => {
 
       {!isSupported && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-8 text-center">
-          <span role="img" aria-label="경고">
-            ⚠️
-          </span>{" "}
           이 브라우저는 음성 인식을 지원하지 않습니다.{" "}
           <b>Chrome, Edge, Safari</b>를 사용해주세요.
         </div>
       )}
 
-      {/* 상담 준비 중 안내 */}
       {isSupported && !counselId && (
         <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg mb-8 text-center">
           상담 준비 중입니다... 잠시만 기다려주세요.
@@ -265,16 +185,16 @@ const ConsultPage = () => {
         ) : (
           <div className="flex-1 overflow-y-auto mb-8 bg-gray-50 rounded-2xl p-6">
             <div className="flex flex-col gap-4">
-              {messages.map((message, index) => (
+              {messages.map((m, i) => (
                 <div
-                  key={index}
+                  key={i}
                   className={`max-w-[80%] p-4 rounded-2xl leading-relaxed ${
-                    message.isUser
+                    m.isUser
                       ? "self-end bg-blue-600 text-white rounded-br-sm"
                       : "self-start bg-white text-gray-800 rounded-bl-sm shadow-sm"
                   }`}
                 >
-                  {message.text}
+                  {m.text}
                 </div>
               ))}
               {currentTranscript && (
@@ -289,63 +209,21 @@ const ConsultPage = () => {
           </div>
         )}
 
-        <div className="flex justify-center gap-8 p-4">
-          <button
-            className={`w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
-              isRecording ? "bg-red-50 animate-[pulse_2s_infinite]" : ""
-            }`}
-            onClick={isRecording ? handleStopRecording : handleStartRecording}
-            aria-label={isRecording ? "녹음 중지" : "녹음 시작"}
-            disabled={!isSupported || !counselId}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"
-                fill={
-                  isRecording ? "#dc3545" : isSupported ? "#0066ff" : "#999"
-                }
-              />
-              <path
-                d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
-                fill={
-                  isRecording ? "#dc3545" : isSupported ? "#0066ff" : "#999"
-                }
-              />
-            </svg>
-          </button>
-          <button
-            className={`w-16 h-16 rounded-full border-none bg-white shadow-md flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none ${
-              isSpeaking ? "bg-blue-50 animate-[pulse_2s_infinite]" : ""
-            }`}
-            onClick={handleSpeak}
-            aria-label={isSpeaking ? "음성 중지" : "상담 내용 듣기"}
-            disabled={messages.length === 0}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
-                fill={
-                  isSpeaking
-                    ? "#0066ff"
-                    : messages.length === 0
-                    ? "#999"
-                    : "#666"
-                }
-              />
-            </svg>
-          </button>
+        <div className="flex justify-center gap-4 p-4 items-center">
+          <RecordButton
+            isRecording={isRecording}
+            isSupported={isSupported}
+            counselId={counselId}
+            handleStartRecording={handleStartRecording}
+            handleStopRecording={handleStopRecording}
+          />
+          <ExitButton
+            onExit={() => {
+              if (window.confirm("정말 상담을 종료하시겠습니까?")) {
+                router.push("/");
+              }
+            }}
+          />
         </div>
       </main>
     </div>
