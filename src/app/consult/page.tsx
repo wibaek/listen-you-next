@@ -114,7 +114,9 @@ const ConsultPage = () => {
             URL.revokeObjectURL(url);
           };
         }
-      } catch {}
+      } catch {
+        // 실패 시 무시하고 이동
+      }
     })();
   }, [messages]);
 
@@ -151,7 +153,9 @@ const ConsultPage = () => {
       if (data.message) {
         setMessages((prev) => [...prev, { text: data.message, isUser: false }]);
       }
-    } catch {}
+    } catch {
+      // 실패 시 무시하고 이동
+    }
   };
 
   return (
@@ -218,8 +222,33 @@ const ConsultPage = () => {
             handleStopRecording={handleStopRecording}
           />
           <ExitButton
-            onExit={() => {
+            onExit={async () => {
               if (window.confirm("정말 상담을 종료하시겠습니까?")) {
+                // summary API 호출
+                try {
+                  const consult_history = messages.map((m) =>
+                    m.isUser
+                      ? { "Human Message": m.text }
+                      : { "AI Message": m.text }
+                  );
+                  const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/summarize/`,
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ consult_history }),
+                    }
+                  );
+                  const data = await res.json();
+                  if (data.summary) {
+                    router.push(
+                      `/report?summary=${encodeURIComponent(data.summary)}`
+                    );
+                    return;
+                  }
+                } catch {
+                  // 실패 시 무시하고 이동
+                }
                 router.push("/");
               }
             }}
