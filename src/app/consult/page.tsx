@@ -7,6 +7,7 @@ import { SpeechRecognition } from "@/types/speech";
 import { useRouter } from "next/navigation";
 import RecordButton from "./RecordButton";
 import ExitButton from "./ExitButton";
+import Loading from "../components/Loading";
 
 const ConsultPage = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -20,6 +21,7 @@ const ConsultPage = () => {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     counselIdRef.current = counselId;
@@ -213,7 +215,7 @@ const ConsultPage = () => {
           </div>
         )}
 
-        <div className="flex justify-center gap-4 p-4 items-center">
+        <div className="flex justify-center gap-4 p-4 items-center pb-16">
           <RecordButton
             isRecording={isRecording}
             isSupported={isSupported}
@@ -224,6 +226,7 @@ const ConsultPage = () => {
           <ExitButton
             onExit={async () => {
               if (window.confirm("정말 상담을 종료하시겠습니까?")) {
+                setLoading(true);
                 // summary API 호출
                 try {
                   const consult_history = messages.map((m) =>
@@ -241,6 +244,7 @@ const ConsultPage = () => {
                   );
                   const data = await res.json();
                   if (data.summary) {
+                    setLoading(false);
                     router.push(
                       `/report?summary=${encodeURIComponent(data.summary)}`
                     );
@@ -249,12 +253,14 @@ const ConsultPage = () => {
                 } catch {
                   // 실패 시 무시하고 이동
                 }
+                setLoading(false);
                 router.push("/");
               }
             }}
           />
         </div>
       </main>
+      {loading && <Loading />}
     </div>
   );
 };
