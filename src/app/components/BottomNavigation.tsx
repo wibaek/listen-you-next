@@ -7,7 +7,7 @@ import { CgProfile } from "react-icons/cg";
 
 const navItems = [
   { href: "/", label: "홈", icon: AiOutlineHome },
-  { href: "/consult", label: "센터", icon: MdLocalHospital },
+  { href: "/center", label: "센터", icon: MdLocalHospital },
   { href: "/calendar", label: "캘린더", icon: AiOutlineCalendar },
   { href: "/my", label: "마이", icon: CgProfile },
 ];
