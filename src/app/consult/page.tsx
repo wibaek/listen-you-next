@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import RecordButton from "./RecordButton";
 import ExitButton from "./ExitButton";
 import Loading from "../components/Loading";
+import Image from "next/image";
 
 const ConsultPage = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -182,11 +183,32 @@ const ConsultPage = () => {
 
       <main className="flex-1 flex flex-col">
         {messages.length === 0 && !currentTranscript ? (
-          <div className="text-center text-2xl text-gray-600 m-auto">
-            안녕하세요! Listen You입니다.
-            <br />
-            <br />
-            마이크 버튼을 눌러 이야기를 시작해보세요.
+          <div className="text-center flex-1 flex flex-col items-center justify-center">
+            <div className="relative w-64 h-64 mb-8">
+              <Image
+                src="/character.png"
+                alt="AI 상담사 캐릭터"
+                fill
+                style={{ objectFit: "contain" }}
+                priority
+              />
+            </div>
+            <div className="relative mb-8">
+              <div className="bg-gray-700 text-white px-6 py-3 rounded-2xl">
+                오늘 하루 어떠신가요?
+              </div>
+              <div
+                className="absolute w-4 h-4 bg-gray-700 rotate-45"
+                style={{
+                  bottom: "-8px",
+                  left: "50%",
+                  transform: "translateX(-50%) rotate(45deg)",
+                }}
+              />
+            </div>
+            <p className="text-lg text-gray-600 mb-8">
+              마이크 버튼을 눌러 이야기를 시작해보세요.
+            </p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto mb-8 bg-gray-50 rounded-2xl p-6">
@@ -227,7 +249,6 @@ const ConsultPage = () => {
             onExit={async () => {
               if (window.confirm("정말 상담을 종료하시겠습니까?")) {
                 setLoading(true);
-                // summary API 호출
                 try {
                   const counsel_history = messages.map((m) =>
                     m.isUser
