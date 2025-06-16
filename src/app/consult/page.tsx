@@ -23,6 +23,7 @@ const ConsultPage = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [robotMode, setRobotMode] = useState(false);
 
   useEffect(() => {
     counselIdRef.current = counselId;
@@ -163,9 +164,24 @@ const ConsultPage = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-8 min-h-screen flex flex-col">
-      <header className="text-center mb-8">
+      <header className="text-center mb-8 relative">
         <h1 className="text-4xl text-blue-600 mb-2">Listen You</h1>
         <p className="text-xl text-gray-600">당신의 이야기를 들려주세요</p>
+        {/* 로봇모드 토글 아이콘 */}
+        <button
+          className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-12 h-12 rounded-full border-2 border-blue-200 bg-white shadow hover:bg-blue-50 transition-all"
+          aria-label="로봇모드 토글"
+          onClick={() => setRobotMode((prev) => !prev)}
+        >
+          <Image
+            src={robotMode ? "/character-listen.png" : "/character-talk.png"}
+            alt="로봇모드 토글"
+            width={36}
+            height={36}
+            style={{ objectFit: "contain" }}
+            priority
+          />
+        </button>
       </header>
 
       {!isSupported && (
@@ -197,18 +213,33 @@ const ConsultPage = () => {
               <div className="bg-gray-700 text-white px-6 py-3 rounded-2xl">
                 오늘 하루 어떠신가요?
               </div>
-              <div
-                className="absolute w-4 h-4 bg-gray-700 rotate-45"
-                style={{
-                  bottom: "-8px",
-                  left: "50%",
-                  transform: "translateX(-50%) rotate(45deg)",
-                }}
+            </div>
+            {!robotMode && (
+              <p className="text-lg text-gray-600 mb-8">
+                마이크 버튼을 눌러 이야기를 시작해보세요.
+              </p>
+            )}
+          </div>
+        ) : robotMode ? (
+          <div className="flex-1 flex flex-col items-center justify-center">
+            {/* 로봇 캐릭터만 중앙에 크게 */}
+            <div className="relative w-64 h-64 mb-8 flex items-center justify-center">
+              <Image
+                src={
+                  currentTranscript
+                    ? "/character-listen.png"
+                    : messages.length > 0 &&
+                      !messages[messages.length - 1].isUser
+                    ? "/character-talk.png"
+                    : "/character-listen.png"
+                }
+                alt="로봇 캐릭터"
+                fill
+                style={{ objectFit: "contain" }}
+                priority
               />
             </div>
-            <p className="text-lg text-gray-600 mb-8">
-              마이크 버튼을 눌러 이야기를 시작해보세요.
-            </p>
+            {/* 말풍선(상자) 완전히 제거 */}
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto mb-8 bg-gray-50 rounded-2xl p-6">
