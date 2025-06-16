@@ -229,17 +229,21 @@ const ConsultPage = () => {
                 setLoading(true);
                 // summary API 호출
                 try {
-                  const consult_history = messages.map((m) =>
+                  const counsel_history = messages.map((m) =>
                     m.isUser
                       ? { "Human Message": m.text }
                       : { "AI Message": m.text }
                   );
                   const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/summarize/`,
+                    `${process.env.NEXT_PUBLIC_SERVER_URL}/chat/end/`,
                     {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ consult_history }),
+                      body: JSON.stringify({
+                        counsel_history,
+                        user_id: 1,
+                        counsel_id: counselId,
+                      }),
                     }
                   );
                   const data = await res.json();
