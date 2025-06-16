@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 const MyPage = () => {
   // 상담 주기 및 상담 결과 상태
@@ -111,8 +112,8 @@ const MyPage = () => {
           ) : error ? (
             <div className="text-red-500">{error}</div>
           ) : summary ? (
-            <div className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
-              {summary}
+            <div className="text-gray-800 text-base leading-relaxed">
+              <ReactMarkdown>{summary}</ReactMarkdown>
             </div>
           ) : (
             <div className="text-gray-500">상담 내역이 없습니다.</div>
