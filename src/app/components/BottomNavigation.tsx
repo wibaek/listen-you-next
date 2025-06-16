@@ -1,15 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AiOutlineHome, AiOutlineCalendar } from "react-icons/ai";
-import { MdLocalHospital } from "react-icons/md";
-import { CgProfile } from "react-icons/cg";
+import Image from "next/image";
 
 const navItems = [
-  { href: "/", label: "홈", icon: AiOutlineHome },
-  { href: "/consult", label: "센터", icon: MdLocalHospital },
-  { href: "/calendar", label: "캘린더", icon: AiOutlineCalendar },
-  { href: "/my", label: "마이", icon: CgProfile },
+  { href: "/consult", label: "홈", icon: "/icon-home.png" },
+  { href: "/center", label: "센터", icon: "/icon-center.png" },
+  { href: "/", label: "캘린더", icon: "/icon-calendar.png" },
+  { href: "/my", label: "마이", icon: "/icon-my.png" },
 ];
 
 export default function BottomNavigation() {
@@ -19,7 +17,6 @@ export default function BottomNavigation() {
       <div className="flex justify-between items-center max-w-md mx-auto px-2 sm:px-6 py-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
-          const Icon = item.icon;
           return (
             <Link
               key={item.href}
@@ -29,14 +26,18 @@ export default function BottomNavigation() {
               }`}
               style={{ minWidth: 0 }}
             >
-              <Icon
-                size={28}
+              <Image
+                src={item.icon}
+                alt={item.label}
+                width={28}
+                height={28}
                 className={`mb-0.5 transition-all ${
                   isActive
                     ? "drop-shadow-[0_2px_8px_rgba(0,102,255,0.18)] scale-110"
                     : ""
                 }`}
-                aria-label={item.label}
+                style={{ objectFit: "contain" }}
+                priority={isActive}
               />
               <span className="text-xs sm:text-sm leading-none tracking-tight mt-0.5">
                 {item.label}

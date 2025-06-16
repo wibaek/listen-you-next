@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import ReactMarkdown from "react-markdown";
 
 const ReportPage = () => {
   const [report, setReport] = useState<string>("");
@@ -79,8 +80,8 @@ const ReportPage = () => {
                   {error}
                 </span>
               ) : (
-                <span className="text-base md:text-lg font-normal text-gray-800 whitespace-pre-line text-left leading-relaxed">
-                  {report}
+                <span className="text-base md:text-lg font-normal text-gray-800 text-left leading-relaxed w-full">
+                  <ReactMarkdown>{report}</ReactMarkdown>
                 </span>
               )}
             </div>
