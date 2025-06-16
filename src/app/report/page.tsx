@@ -1,14 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const ReportPage = () => {
   const [report, setReport] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
+    const summary = searchParams.get("summary");
+    if (summary) {
+      setReport(summary);
+      setLoading(false);
+      return;
+    }
     const fetchReport = async () => {
       try {
         // 실제 API 엔드포인트로 교체 필요
@@ -33,7 +40,7 @@ const ReportPage = () => {
       }
     };
     fetchReport();
-  }, []);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center relative px-4 py-8">
@@ -45,7 +52,7 @@ const ReportPage = () => {
               <button
                 className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white border-2 border-blue-400 shadow hover:bg-blue-50 active:bg-blue-100 text-blue-600"
                 aria-label="뒤로가기"
-                onClick={() => router.push("/lobby")}
+                onClick={() => router.push("/")}
                 style={{ minWidth: 36, minHeight: 36 }}
               >
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">

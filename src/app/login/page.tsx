@@ -13,14 +13,17 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: formData.id,
-          password: formData.password,
-        }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/login/login/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: formData.id,
+            password: formData.password,
+          }),
+        }
+      );
 
       if (!res.ok) {
         alert("로그인 실패");
