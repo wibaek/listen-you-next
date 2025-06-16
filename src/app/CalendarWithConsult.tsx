@@ -1,9 +1,13 @@
 type CalendarWithConsultProps = {
   consultDates: number[];
+  onDateClick?: (day: number) => void;
+  selectedDate?: number | null;
 };
 
 export default function CalendarWithConsult({
   consultDates,
+  onDateClick,
+  selectedDate,
 }: CalendarWithConsultProps) {
   const today = new Date();
   const year = today.getFullYear();
@@ -20,23 +24,27 @@ export default function CalendarWithConsult({
           const day = i + 1;
           const isConsulted = consultDates.includes(day);
           const isToday = day === todayDate;
+          const isSelected = day === selectedDate;
           return (
             <div
               key={day}
               className={`flex items-center justify-center w-9 h-9 rounded-full border transition-all
                 ${
-                  isConsulted
+                  isSelected
+                    ? "bg-green-400 border-green-600 text-white font-bold scale-110 shadow-lg"
+                    : isConsulted
                     ? "bg-blue-500 border-blue-500 text-white font-bold"
                     : "bg-gray-100 border-gray-200 text-gray-400"
                 }
                 ${
-                  isToday
+                  isToday && !isSelected
                     ? "ring-2 ring-blue-400 border-blue-400 text-blue-700 bg-white font-bold"
                     : ""
                 }
-                hover:scale-105 hover:shadow-md cursor-default select-none
+                hover:scale-105 hover:shadow-md cursor-pointer select-none
               `}
               title={isConsulted ? "상담 완료" : undefined}
+              onClick={() => onDateClick && onDateClick(day)}
             >
               {day}
             </div>
