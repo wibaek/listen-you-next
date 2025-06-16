@@ -13,15 +13,11 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // 상담 내역 불러오기
   useEffect(() => {
     const fetchConsultDates = async () => {
-      setLoading(true);
-      setError(null);
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_SERVER_URL}/user/date/`,
@@ -38,22 +34,23 @@ export default function Home() {
             { counsel_id: string; created_at: string }
           > = {};
           const dates: number[] = [];
-          data.consult_details.forEach((item: any) => {
-            const date = new Date(item.created_at);
-            const day = date.getDate();
-            map[day] = {
-              counsel_id: item.counsel_id,
-              created_at: item.created_at,
-            };
-            dates.push(day);
-          });
+          data.consult_details.forEach(
+            (item: { counsel_id: string; created_at: string }) => {
+              const date = new Date(item.created_at);
+              const day = date.getDate();
+              map[day] = {
+                counsel_id: item.counsel_id,
+                created_at: item.created_at,
+              };
+              dates.push(day);
+            }
+          );
           setConsultMap(map);
           setConsultDates(dates);
         }
       } catch {
-        setError("상담 내역을 불러오지 못했습니다.");
+        // 에러 무시 (에러 메시지 필요시 추가)
       }
-      setLoading(false);
     };
     fetchConsultDates();
   }, []);
@@ -98,14 +95,14 @@ export default function Home() {
         />
         {/* 상담 리포트 */}
         {selectedDate && (
-          <div className="w-full bg-white rounded-2xl shadow p-4 mb-6">
+          <div className="w-full bg-white rounded-2xl shadow p-4 mb-6 flex flex-col items-center">
             <div className="text-lg font-bold mb-2">
               {selectedDate}일 상담 내역
             </div>
             {reportLoading ? (
               <div className="text-gray-500">불러오는 중...</div>
             ) : selectedReport ? (
-              <div className="text-gray-800 text-sm">
+              <div className="text-gray-800 text-sm w-full">
                 <ReactMarkdown>{selectedReport}</ReactMarkdown>
               </div>
             ) : (
