@@ -32,12 +32,14 @@ export default function CalendarWithConsult({
                 ${
                   isSelected
                     ? "bg-green-400 border-green-600 text-white font-bold scale-110 shadow-lg"
+                    : isConsulted && isToday
+                    ? "bg-blue-500 border-blue-500 text-blue-900 font-bold"
                     : isConsulted
                     ? "bg-blue-500 border-blue-500 text-white font-bold"
                     : "bg-gray-100 border-gray-200 text-gray-400"
                 }
                 ${
-                  isToday && !isSelected
+                  isToday && !isSelected && !isConsulted
                     ? "ring-2 ring-blue-400 border-blue-400 text-blue-700 bg-white font-bold"
                     : ""
                 }
