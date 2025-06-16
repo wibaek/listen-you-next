@@ -14,6 +14,15 @@ interface Hospital {
   lng: number;
 }
 
+interface KakaoPlace {
+  id: string;
+  place_name: string;
+  address_name: string;
+  phone: string;
+  x: string;
+  y: string;
+}
+
 export default function CenterPage() {
   // 카카오맵 로더 훅 사용
   const [loading, error] = useKakaoLoader({
@@ -41,7 +50,7 @@ export default function CenterPage() {
       );
       const data = await res.json();
       setHospitals(
-        data.documents.map((place: any) => ({
+        (data.documents as KakaoPlace[]).map((place) => ({
           id: place.id,
           name: place.place_name,
           address: place.address_name,
